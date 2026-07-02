@@ -32,6 +32,7 @@ Chay bang Docker Compose va scale 5 replica:
 ```bash
 docker compose up -d --build --scale status-service=5
 curl http://localhost:8080/api/status
+./scripts/prove-round-robin.ps1
 ```
 
 Dung cum:
@@ -76,38 +77,51 @@ Docker Compose sau khi scale 5 replica:
 [compose] 6 services:
   sys-desgin-foundation-1-nginx-1 (nginx:1.27-alpine) Up 7 seconds [8080, 8080]
   sys-desgin-foundation-1-status-service-1 (sys-desgin-foundation-1-status-service) Up 14 seconds (healthy) [3000/tcp]
-  sys-desgin-foundation-1-status-service-2 (sys-desgin-foundation-1-status-service) Up 13 seconds (healthy) [3000/tcp]
+  sys-desgin-foundation-1-status-service-2 (sys-desgin-foundation-1-status-service) Up 15 seconds (healthy) [3000/tcp]
   sys-desgin-foundation-1-status-service-3 (sys-desgin-foundation-1-status-service) Up 13 seconds (healthy) [3000/tcp]
-  sys-desgin-foundation-1-status-service-4 (sys-desgin-foundation-1-status-service) Up 13 seconds (healthy) [3000/tcp]
+  sys-desgin-foundation-1-status-service-4 (sys-desgin-foundation-1-status-service) Up 14 seconds (healthy) [3000/tcp]
   sys-desgin-foundation-1-status-service-5 (sys-desgin-foundation-1-status-service) Up 13 seconds (healthy) [3000/tcp]
 ```
 
 Goi `/api/status` qua Nginx:
 
 ```text
-1: 39617b1e370e 2026-07-02T10:34:04.673Z
-2: 1376028f6c5d 2026-07-02T10:34:04.869Z
-3: d0d4876d6d22 2026-07-02T10:34:05.002Z
-4: 680fade0913b 2026-07-02T10:34:05.123Z
-5: 282c26d0251d 2026-07-02T10:34:05.247Z
-6: 39617b1e370e 2026-07-02T10:34:05.370Z
-7: 39617b1e370e 2026-07-02T10:34:05.479Z
-8: 282c26d0251d 2026-07-02T10:34:05.604Z
-9: 39617b1e370e 2026-07-02T10:34:05.728Z
-10: 39617b1e370e 2026-07-02T10:34:05.836Z
+1: 3bd708dcac72
+2: 9c559bce3d2d
+3: a95457556f2d
+4: df1fd865ea6f
+5: 9f074d8d639f
+6: 3bd708dcac72
+7: 9c559bce3d2d
+8: a95457556f2d
+9: df1fd865ea6f
+10: 9f074d8d639f
+11: 3bd708dcac72
+12: 9c559bce3d2d
+13: a95457556f2d
+14: df1fd865ea6f
+15: 9f074d8d639f
+```
+
+Script `./scripts/prove-round-robin.ps1` cung verify tu dong:
+
+```text
+Round-robin proof passed: 5 unique nodes, same order repeated 3 times.
 ```
 
 Goi `/api/metrics` qua Nginx:
 
 ```text
-1: 282c26d0251d requestCount=2 uptimeSeconds=13.77
-2: 282c26d0251d requestCount=3 uptimeSeconds=13.952
-3: 282c26d0251d requestCount=4 uptimeSeconds=14.063
-4: 282c26d0251d requestCount=5 uptimeSeconds=14.185
-5: 39617b1e370e requestCount=3 uptimeSeconds=13.875
-6: 680fade0913b requestCount=3 uptimeSeconds=13.83
-7: 1376028f6c5d requestCount=3 uptimeSeconds=14.36
-8: 39617b1e370e requestCount=6 uptimeSeconds=14.246
+1: 3bd708dcac72 requestCount=6 uptimeSeconds=22.135
+2: 9c559bce3d2d requestCount=6 uptimeSeconds=22.937
+3: a95457556f2d requestCount=6 uptimeSeconds=23.269
+4: df1fd865ea6f requestCount=6 uptimeSeconds=23.71
+5: 9f074d8d639f requestCount=6 uptimeSeconds=22.629
+6: 3bd708dcac72 requestCount=7 uptimeSeconds=22.285
+7: 9c559bce3d2d requestCount=7 uptimeSeconds=22.975
+8: a95457556f2d requestCount=7 uptimeSeconds=23.304
+9: df1fd865ea6f requestCount=7 uptimeSeconds=23.743
+10: 9f074d8d639f requestCount=7 uptimeSeconds=22.66
 ```
 
 ## 5. Giai thich phan tai
@@ -118,11 +132,18 @@ Config Nginx dung:
 
 ```nginx
 resolver 127.0.0.11 valid=1s ipv6=off;
-set $backend "status-service:3000";
+upstream status_backend {
+  zone status_backend 64k;
+  server status-service:3000 resolve;
+}
+
+set $backend "status_backend";
 proxy_pass http://$backend;
 ```
 
-`127.0.0.11` la Docker embedded DNS. Khi `status-service` duoc scale bang Compose, DNS name `status-service` tra ve nhieu dia chi container. Dung bien `$backend` lam Nginx resolve lai ten service theo resolver thay vi giu ket qua DNS dau tien qua lau. Output `/api/status` cho thay request di qua 5 `servedBy` khac nhau: `39617b1e370e`, `1376028f6c5d`, `d0d4876d6d22`, `680fade0913b`, `282c26d0251d`.
+`127.0.0.11` la Docker embedded DNS. Khi `status-service` duoc scale bang Compose, DNS name `status-service` tra ve nhieu dia chi container. `upstream status_backend` dung `server status-service:3000 resolve` de Nginx lay danh sach backend tu Docker DNS, roi Nginx thuc hien round-robin tren upstream group. `proxy_pass http://$backend` van dung bien `$backend` theo yeu cau bai.
+
+Output `/api/status` cho thay vong round-robin ro rang qua 5 node va lap lai dung thu tu 3 lan: `3bd708dcac72 -> 9c559bce3d2d -> a95457556f2d -> df1fd865ea6f -> 9f074d8d639f`.
 
 Metrics cung xac nhan counter nam trong tung process rieng: cung mot endpoint `/api/metrics`, nhung moi hostname co `requestCount` rieng va tang doc lap.
 

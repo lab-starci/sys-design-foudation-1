@@ -1,5 +1,25 @@
-const express = require("express");
-const os = require("os");
+import express, { NextFunction, Request, Response } from "express";
+import os from "node:os";
+import process from "node:process";
+
+type StatusResponse = {
+  status: "ok";
+  servedBy: string;
+  timestamp: string;
+};
+
+type HeavyResponse = StatusResponse & {
+  load: number;
+  checksum: number;
+  durationMs: number;
+};
+
+type MetricsResponse = {
+  servedBy: string;
+  requestCount: number;
+  uptimeSeconds: number;
+  timestamp: string;
+};
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -7,12 +27,12 @@ const servedBy = os.hostname();
 
 let requestCount = 0;
 
-app.use((req, res, next) => {
+app.use((_req: Request, _res: Response, next: NextFunction) => {
   requestCount += 1;
   next();
 });
 
-app.get("/api/status", (req, res) => {
+app.get("/api/status", (_req: Request, res: Response<StatusResponse>) => {
   res.status(200).json({
     status: "ok",
     servedBy,
@@ -20,7 +40,7 @@ app.get("/api/status", (req, res) => {
   });
 });
 
-app.get("/api/heavy", (req, res) => {
+app.get("/api/heavy", (req: Request, res: Response<HeavyResponse>) => {
   const rawLoad = Number(req.query.load || 100000);
   const load = Number.isFinite(rawLoad)
     ? Math.min(Math.max(Math.trunc(rawLoad), 0), 50000000)
@@ -45,7 +65,7 @@ app.get("/api/heavy", (req, res) => {
   });
 });
 
-app.get("/api/metrics", (req, res) => {
+app.get("/api/metrics", (_req: Request, res: Response<MetricsResponse>) => {
   res.status(200).json({
     servedBy,
     requestCount,

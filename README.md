@@ -2,7 +2,7 @@
 
 ## 1. Mo ta
 
-Bai nay dung mot status service stateless bang Express, dat sau Nginx load balancer. Moi replica tra ve hostname rieng qua field `servedBy`, vi trong Docker `os.hostname()` la container ID nen co the dung lam fingerprint de quan sat phan tai.
+Bai nay dung mot status service stateless bang TypeScript + Express, dat sau Nginx load balancer. Moi replica tra ve hostname rieng qua field `servedBy`, vi trong Docker `os.hostname()` la container ID nen co the dung lam fingerprint de quan sat phan tai.
 
 Service lang nghe cong noi bo `3000` va cung cap 3 endpoint:
 
@@ -18,6 +18,13 @@ Chay local:
 npm install
 npm run start:dev
 curl http://localhost:3000/api/status
+```
+
+Build va chay compiled JavaScript tu TypeScript:
+
+```bash
+npm run build
+npm start
 ```
 
 Chay bang Docker Compose va scale 5 replica:
@@ -47,7 +54,7 @@ flowchart LR
 
 Stack:
 
-- Node.js 20 + Express
+- Node.js 20 + TypeScript + Express
 - Docker multi-stage image
 - Docker Compose scale
 - Nginx `1.27-alpine`
@@ -58,63 +65,49 @@ Stack:
 Local contract test:
 
 ```text
-{"status":"ok","servedBy":"BETUANMINH","timestamp":"2026-07-02T09:47:56.807Z"}
-{"status":"ok","servedBy":"BETUANMINH","load":1000,"checksum":496599,"durationMs":0.086,"timestamp":"2026-07-02T09:47:56.897Z"}
-{"servedBy":"BETUANMINH","requestCount":3,"uptimeSeconds":3.167,"timestamp":"2026-07-02T09:47:56.903Z"}
+{"status":"ok","servedBy":"BETUANMINH","timestamp":"2026-07-02T10:34:21.310Z"}
+{"status":"ok","servedBy":"BETUANMINH","load":1000,"checksum":496599,"durationMs":0.064,"timestamp":"2026-07-02T10:34:21.367Z"}
+{"servedBy":"BETUANMINH","requestCount":3,"uptimeSeconds":2.095,"timestamp":"2026-07-02T10:34:21.371Z"}
 ```
 
 Docker Compose sau khi scale 5 replica:
 
 ```text
 [compose] 6 services:
-  systemdesign-nginx-1 (nginx:1.27-alpine) Up 13 seconds [8080, 8080]
-  systemdesign-status-service-1 (systemdesign-status-service) Up 19 seconds (healthy) [3000/tcp]
-  systemdesign-status-service-2 (systemdesign-status-service) Up 19 seconds (healthy) [3000/tcp]
-  systemdesign-status-service-3 (systemdesign-status-service) Up 19 seconds (healthy) [3000/tcp]
-  systemdesign-status-service-4 (systemdesign-status-service) Up 19 seconds (healthy) [3000/tcp]
-  systemdesign-status-service-5 (systemdesign-status-service) Up 18 seconds (healthy) [3000/tcp]
+  sys-desgin-foundation-1-nginx-1 (nginx:1.27-alpine) Up 7 seconds [8080, 8080]
+  sys-desgin-foundation-1-status-service-1 (sys-desgin-foundation-1-status-service) Up 14 seconds (healthy) [3000/tcp]
+  sys-desgin-foundation-1-status-service-2 (sys-desgin-foundation-1-status-service) Up 13 seconds (healthy) [3000/tcp]
+  sys-desgin-foundation-1-status-service-3 (sys-desgin-foundation-1-status-service) Up 13 seconds (healthy) [3000/tcp]
+  sys-desgin-foundation-1-status-service-4 (sys-desgin-foundation-1-status-service) Up 13 seconds (healthy) [3000/tcp]
+  sys-desgin-foundation-1-status-service-5 (sys-desgin-foundation-1-status-service) Up 13 seconds (healthy) [3000/tcp]
 ```
 
 Goi `/api/status` qua Nginx:
 
 ```text
-1: 32b3e08cf570
-2: d27b68be36b8
-3: d27b68be36b8
-4: ff25331fba41
-5: ff25331fba41
-6: 32b3e08cf570
-7: c57acb459d15
-8: c57acb459d15
-9: d27b68be36b8
-10: c57acb459d15
-11: 08c2c7426f08
-12: 32b3e08cf570
-13: 08c2c7426f08
-14: 32b3e08cf570
-15: 32b3e08cf570
-16: c57acb459d15
-17: 08c2c7426f08
-18: 32b3e08cf570
-19: ff25331fba41
-20: ff25331fba41
+1: 39617b1e370e 2026-07-02T10:34:04.673Z
+2: 1376028f6c5d 2026-07-02T10:34:04.869Z
+3: d0d4876d6d22 2026-07-02T10:34:05.002Z
+4: 680fade0913b 2026-07-02T10:34:05.123Z
+5: 282c26d0251d 2026-07-02T10:34:05.247Z
+6: 39617b1e370e 2026-07-02T10:34:05.370Z
+7: 39617b1e370e 2026-07-02T10:34:05.479Z
+8: 282c26d0251d 2026-07-02T10:34:05.604Z
+9: 39617b1e370e 2026-07-02T10:34:05.728Z
+10: 39617b1e370e 2026-07-02T10:34:05.836Z
 ```
 
 Goi `/api/metrics` qua Nginx:
 
 ```text
-1: 32b3e08cf570 requestCount=13 uptimeSeconds=31.12
-2: d27b68be36b8 requestCount=9 uptimeSeconds=31.542
-3: 32b3e08cf570 requestCount=14 uptimeSeconds=31.425
-4: 08c2c7426f08 requestCount=10 uptimeSeconds=32.059
-5: 08c2c7426f08 requestCount=11 uptimeSeconds=32.184
-6: 08c2c7426f08 requestCount=12 uptimeSeconds=32.323
-7: c57acb459d15 requestCount=8 uptimeSeconds=31.491
-8: 08c2c7426f08 requestCount=13 uptimeSeconds=32.588
-9: 32b3e08cf570 requestCount=15 uptimeSeconds=32.219
-10: 08c2c7426f08 requestCount=14 uptimeSeconds=32.855
-11: ff25331fba41 requestCount=10 uptimeSeconds=32.261
-12: ff25331fba41 requestCount=11 uptimeSeconds=32.4
+1: 282c26d0251d requestCount=2 uptimeSeconds=13.77
+2: 282c26d0251d requestCount=3 uptimeSeconds=13.952
+3: 282c26d0251d requestCount=4 uptimeSeconds=14.063
+4: 282c26d0251d requestCount=5 uptimeSeconds=14.185
+5: 39617b1e370e requestCount=3 uptimeSeconds=13.875
+6: 680fade0913b requestCount=3 uptimeSeconds=13.83
+7: 1376028f6c5d requestCount=3 uptimeSeconds=14.36
+8: 39617b1e370e requestCount=6 uptimeSeconds=14.246
 ```
 
 ## 5. Giai thich phan tai
@@ -129,7 +122,7 @@ set $backend "status-service:3000";
 proxy_pass http://$backend;
 ```
 
-`127.0.0.11` la Docker embedded DNS. Khi `status-service` duoc scale bang Compose, DNS name `status-service` tra ve nhieu dia chi container. Dung bien `$backend` lam Nginx resolve lai ten service theo resolver thay vi giu ket qua DNS dau tien qua lau. Output `/api/status` cho thay request di qua 5 `servedBy` khac nhau: `32b3e08cf570`, `d27b68be36b8`, `ff25331fba41`, `c57acb459d15`, `08c2c7426f08`.
+`127.0.0.11` la Docker embedded DNS. Khi `status-service` duoc scale bang Compose, DNS name `status-service` tra ve nhieu dia chi container. Dung bien `$backend` lam Nginx resolve lai ten service theo resolver thay vi giu ket qua DNS dau tien qua lau. Output `/api/status` cho thay request di qua 5 `servedBy` khac nhau: `39617b1e370e`, `1376028f6c5d`, `d0d4876d6d22`, `680fade0913b`, `282c26d0251d`.
 
 Metrics cung xac nhan counter nam trong tung process rieng: cung mot endpoint `/api/metrics`, nhung moi hostname co `requestCount` rieng va tang doc lap.
 
@@ -137,7 +130,8 @@ Metrics cung xac nhan counter nam trong tung process rieng: cung mot endpoint `/
 
 - Service stateless: khong ghi file, DB, session store hay shared memory.
 - `servedBy = os.hostname()` de Docker container ID tro thanh instance fingerprint.
+- Source viet bang TypeScript trong `src/index.ts`, production build ra `dist/index.js`.
 - `requestCount` la bien trong process. Node.js xu ly JavaScript tren mot event loop, nen phep tang counter nay an toan trong pham vi mot instance va khong chia se giua replica.
-- Dockerfile multi-stage de image runtime chi gom production dependencies va source can chay.
+- Dockerfile multi-stage chay `npm run build`, prune dev dependencies, va image runtime chi gom production dependencies + `dist`.
 - Compose chi expose port `3000` trong network noi bo; host chi truy cap qua Nginx port `8080`.
 - Healthcheck dung `/api/status` de Nginx chi start sau khi cac replica healthy.

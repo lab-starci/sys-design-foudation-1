@@ -2,15 +2,22 @@
   "name": "status-service-lb",
   "version": "1.0.0",
   "description": "Stateless status service behind an Nginx round-robin load balancer",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "start:dev": "node --watch src/index.js"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:dev": "tsx watch src/index.ts"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
     "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.10",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
   }
 }
